@@ -1,0 +1,29 @@
+base:
+  task:
+    pools:
+      testPoolOne:
+        coreSize: 2
+        maxSize: 4
+        taskDecorator: testTaskDecorator
+      testPoolTwo:
+        queueCapacity: 10
+        coreSize: 1
+        maxSize: 3
+        allowCoreThreadTimeout: false
+        keepAlive: 15s
+        threadFactory: testThreadFactory
+        threadGroupName: testThreadGroup
+        waitForTasksToCompleteShutdown: true
+        rejectedExecutionHandler: testRejectedExecutionHandler
+      testPoolThree:
+        rejectedExecutionHandler: AbortPolicy
+        taskDecorator: contextAwareDecorator
+      testPoolFour:
+        rejectedExecutionHandler: CallerRunsPolicy
+      testPoolFive:
+        rejectedExecutionHandler: DiscardOldestPolicy
+      testPoolSix:
+        rejectedExecutionHandler: DiscardPolicy
+    shutdown:
+      awaitTermination: true
+      awaitTerminationPeriod: 1m

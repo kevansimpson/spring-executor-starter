@@ -19,6 +19,12 @@ import static org.spring.ext.task.MultipleExecutorSupport.createMultipleTaskExec
 @EnableConfigurationProperties(MultipleExecutorProperties.class)
 @ConditionalOnClass(MultipleExecutorProperties.class)
 public class MultipleExecutorAutoConfiguration {
+
+    @Bean
+    public ContextAwareDecorator contextAwareDecorator() {
+        return new ContextAwareDecorator();
+    }
+
     @Bean
     public Map<String, AsyncTaskExecutor> multipleTaskExecutors(
             MultipleExecutorProperties properties,
