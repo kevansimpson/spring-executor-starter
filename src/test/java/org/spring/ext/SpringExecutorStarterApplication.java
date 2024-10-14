@@ -10,8 +10,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableAsync
 public class SpringExecutorStarterApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(SpringExecutorStarterApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(SpringExecutorStarterApplication.class, args);
+    }
 }

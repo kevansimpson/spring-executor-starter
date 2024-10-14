@@ -1,6 +1,7 @@
 package org.spring.ext.task;
 
 import org.springframework.core.task.TaskDecorator;
+import org.springframework.lang.NonNull;
 import org.springframework.web.context.request.RequestAttributes;
 
 import static org.springframework.web.context.request.RequestContextHolder.*;
@@ -10,8 +11,8 @@ import static org.springframework.web.context.request.RequestContextHolder.*;
  * {@link org.springframework.web.context.request.RequestContextHolder}.
  */
 public class ContextAwareDecorator implements TaskDecorator {
-    @Override
-    public Runnable decorate(Runnable runnable) {
+    @Override @NonNull
+    public Runnable decorate(@NonNull Runnable runnable) {
         RequestAttributes attributes = getRequestAttributes();
         return () -> {
             try {
