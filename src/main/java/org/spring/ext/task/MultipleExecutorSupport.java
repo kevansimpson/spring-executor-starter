@@ -1,3 +1,18 @@
+/*
+ * Copyright 2002-2021 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.spring.ext.task;
 
 import lombok.extern.log4j.Log4j2;
@@ -18,8 +33,23 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 
+/**
+ * Factory methods for creating {@link AsyncTaskExecutor} beans from {@link MultipleExecutorProperties} configuration.
+ *
+ * @author Kevan Simpson
+ */
 @Log4j2
 public class MultipleExecutorSupport {
+    /**
+     * Creates and customizes {@link AsyncTaskExecutor} beans.
+     *
+     * @param properties Configuration properties for executor beans.
+     * @param taskExecutorCustomizer Optionally provided executor customizer.
+     * @param taskDecorator Optionally provided task decorator.
+     * @param registry Bean definition registry.
+     * @param applicationContext Eponymous application context.
+     * @return a map of executor beans mapped by configured name.
+     */
     public static Map<String, AsyncTaskExecutor> createMultipleTaskExecutors(
             MultipleExecutorProperties properties,
             ObjectProvider<ThreadPoolTaskExecutorCustomizer> taskExecutorCustomizer,
@@ -50,6 +80,14 @@ public class MultipleExecutorSupport {
         return executorMap;
     }
 
+    /**
+     * Customizes a single {@link ThreadPoolTaskExecutor} from configuration.
+     *
+     * @param poolName The name of the executor pool to be customized.
+     * @param poolConfig The pool configuration and source of customization.
+     * @param executor The executor to be customized.
+     * @param applicationContext Eponymous application context.
+     */
     static void customizeExecutor(
             String poolName,
             PoolConfig poolConfig,
@@ -70,6 +108,14 @@ public class MultipleExecutorSupport {
         setRejectedExecutionHandler(executor, poolConfig.getRejectedExecutionHandler(), applicationContext);
     }
 
+    /**
+     * Creates an executor builder using provided configuration.
+     *
+     * @param name The name of the executor pool to be customized.
+     * @param pool The pool configuration and source of customization.
+     * @param shutdown The shutdown configuration and source of customization.
+     * @return the configured executor builder.
+     */
     static ThreadPoolTaskExecutorBuilder newBuilder(String name, PoolConfig pool, ShutdownConfig shutdown) {
         return new ThreadPoolTaskExecutorBuilder()
                 .queueCapacity(pool.getQueueCapacity())
@@ -82,6 +128,13 @@ public class MultipleExecutorSupport {
                 .threadNamePrefix(String.format("%s-task-", name));
     }
 
+    /**
+     * Configures the {@link RejectedExecutionHandler} for the given executor.
+     *
+     * @param executor The executor to be customized.
+     * @param policy The policy to apply to the executor.
+     * @param applicationContext Eponymous application context.
+     */
     static void setRejectedExecutionHandler(
             ThreadPoolTaskExecutor executor,
             String policy,

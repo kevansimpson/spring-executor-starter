@@ -9,19 +9,16 @@
     <description>Configuration defined TaskExecutors for Spring Boot</description>
     <url>https://github.com/kevansimpson/spring-executor-starter</url>
     <licenses>
-        <license/>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/</url>
+        </license>
     </licenses>
     <developers>
         <developer>
             <id>kevansimpson</id>
         </developer>
     </developers>
-    <scm>
-        <connection/>
-        <developerConnection/>
-        <tag/>
-        <url/>
-    </scm>
     <properties>
         <java.version>17</java.version>
         <maven.compiler.release>${java.version}</maven.compiler.release>

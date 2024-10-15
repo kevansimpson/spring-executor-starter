@@ -1,3 +1,19 @@
+/*
+ * Copyright 2002-2021 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.spring.ext.task;
 
 import jakarta.annotation.Nonnull;
@@ -6,10 +22,7 @@ import org.springframework.boot.task.ThreadPoolTaskExecutorCustomizer;
 import org.springframework.core.task.TaskDecorator;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.web.context.request.RequestAttributes;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -17,7 +30,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
+/**
+ * Supporting classes to test {@link MultipleExecutorAutoConfiguration} capabilities.
+ *
+ * @author Kevan Simpson
+ */
 public class ExecutorTestSupport {
+    /**
+     * Utility with test method annotated with {@link Async} and configured to use &quot;testPoolOne&quot;.
+     */
     public static class PoolHolder {
         @Async("testPoolOne")
         public CompletableFuture<String> doSomethingAsync(AtomicBoolean flag) throws InterruptedException {
@@ -27,6 +48,9 @@ public class ExecutorTestSupport {
         }
     }
 
+    /**
+     * Test customizer which sets {@link java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy} on the executor.
+     */
     public static class TestExecutorCustomizer implements ThreadPoolTaskExecutorCustomizer {
         @Override
         public void customize(ThreadPoolTaskExecutor taskExecutor) {
@@ -34,6 +58,9 @@ public class ExecutorTestSupport {
         }
     }
 
+    /**
+     * Test task decorator which increments a {@link AtomicInteger counter}.
+     */
     @AllArgsConstructor
     public static class TestTaskDecorator implements TaskDecorator {
         private final AtomicInteger counter;
@@ -41,52 +68,6 @@ public class ExecutorTestSupport {
         public Runnable decorate(@Nonnull Runnable runnable) {
             counter.incrementAndGet();
             return runnable;
-        }
-    }
-
-    public static class TestRequestAttributes implements RequestAttributes {
-        private final Map<String, Object> attributeMap = new LinkedHashMap<>();
-
-        @Override
-        public Object getAttribute(@Nonnull String name, int scope) {
-            return (scope == SCOPE_REQUEST) ? attributeMap.get(name) : null;
-        }
-
-        @Override
-        public void setAttribute(@Nonnull String name, @Nonnull Object value, int scope) {
-            if (scope == SCOPE_REQUEST)
-                attributeMap.put(name, value);
-        }
-
-        @Override
-        public void removeAttribute(@Nonnull String name, int scope) {
-            if (scope == SCOPE_REQUEST)
-                attributeMap.remove(name);
-        }
-
-        @Override @Nonnull
-        public String[] getAttributeNames(int scope) {
-            return (scope == SCOPE_REQUEST) ? attributeMap.keySet().toArray(new String[0]) : new String[0];
-        }
-
-        @Override
-        public void registerDestructionCallback(@Nonnull String name, @Nonnull Runnable callback, int scope) {
-            // no op
-        }
-
-        @Override
-        public Object resolveReference(@Nonnull String key) {
-            return null;
-        }
-
-        @Override @Nonnull
-        public String getSessionId() {
-            return "There is no Session, only Zuul";
-        }
-
-        @Override @Nonnull
-        public Object getSessionMutex() {
-            return this;
         }
     }
 }

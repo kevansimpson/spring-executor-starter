@@ -1,10 +1,26 @@
+/*
+ * Copyright 2002-2021 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.spring.ext.task;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 import org.spring.ext.task.ExecutorTestSupport.PoolHolder;
 import org.spring.ext.task.ExecutorTestSupport.TestExecutorCustomizer;
-import org.spring.ext.task.ExecutorTestSupport.TestRequestAttributes;
 import org.spring.ext.task.ExecutorTestSupport.TestTaskDecorator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -32,6 +48,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.web.context.request.RequestContextHolder.getRequestAttributes;
 import static org.springframework.web.context.request.RequestContextHolder.setRequestAttributes;
 
+/**
+ * Integration test to verify behavior of {@link MultipleExecutorAutoConfiguration}
+ * when {@link MultipleExecutorProperties configuration} is present.
+ *
+ * @author Kevan Simpson
+ */
 @SuppressWarnings("unchecked")
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
@@ -107,7 +129,7 @@ public class MultipleExecutorAutoConfigurationTest {
     }
 
     @Test @DirtiesContext
-    public void testRequestAttributes() throws Exception {
+    public void testRequestAttributes() {
         AsyncTaskExecutor one = applicationContext.getBean("testPoolOne", AsyncTaskExecutor.class);
         AsyncTaskExecutor two = applicationContext.getBean("testPoolTwo", AsyncTaskExecutor.class);
         AsyncTaskExecutor three = applicationContext.getBean("testPoolThree", AsyncTaskExecutor.class);
@@ -130,7 +152,7 @@ public class MultipleExecutorAutoConfigurationTest {
         assertThrows(ExecutionException.class, () -> two.submit(hasAttributes).get());
         assertThrows(ExecutionException.class, () -> three.submit(hasAttributes).get());
 
-        setRequestAttributes(new TestRequestAttributes());
+        setRequestAttributes(Mockito.mock(RequestAttributes.class));
         assertThrows(ExecutionException.class, () -> one.submit(hasAttributes).get());
         assertThrows(ExecutionException.class, () -> two.submit(hasAttributes).get());
         assertDoesNotThrow(() -> three.submit(hasAttributes));
