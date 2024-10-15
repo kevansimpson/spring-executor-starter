@@ -41,11 +41,28 @@ import static org.spring.ext.task.MultipleExecutorSupport.createMultipleTaskExec
 @ConditionalOnClass(MultipleExecutorProperties.class)
 public class MultipleExecutorAutoConfiguration {
 
+    /**
+     * Injects a {@link TaskDecorator} which passes thread-local attributes via
+     * {@link org.springframework.web.context.request.RequestContextHolder}
+     * using the name &quot;contextAwareDecorator&quot;.
+     *
+     * @return a <code>TaskDecorator</code> bean.
+     */
     @Bean
     public ContextAwareDecorator contextAwareDecorator() {
         return new ContextAwareDecorator();
     }
 
+    /**
+     * Injects map of configuration-defined {@link AsyncTaskExecutor} beans.
+     *
+     * @param properties Configuration properties for executor beans.
+     * @param taskExecutorCustomizer Optionally provided executor customizer.
+     * @param taskDecorator Optionally provided task decorator.
+     * @param registry Bean definition registry.
+     * @param applicationContext Eponymous application context.
+     * @return a map of executor beans mapped by configured name.
+     */
     @Bean
     public Map<String, AsyncTaskExecutor> multipleTaskExecutors(
             MultipleExecutorProperties properties,
