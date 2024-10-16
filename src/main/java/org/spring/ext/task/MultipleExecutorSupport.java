@@ -41,6 +41,14 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Log4j2
 public class MultipleExecutorSupport {
     /**
+     * Instantiation of this class is not supported.
+     * @throws UnsupportedOperationException if instantiated.
+     */
+    protected MultipleExecutorSupport() {
+        throw new UnsupportedOperationException("Static utility class");
+    }
+
+    /**
      * Creates and customizes {@link AsyncTaskExecutor} beans.
      *
      * @param properties Configuration properties for executor beans.

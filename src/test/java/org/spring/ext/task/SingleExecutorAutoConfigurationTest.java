@@ -91,4 +91,9 @@ public class SingleExecutorAutoConfigurationTest {
             holder.doSomethingAsync(new AtomicBoolean(false));
         });
     }
+
+    @Test
+    public void testSupportClassFailsInstantiation() {
+        assertThrows(UnsupportedOperationException.class, MultipleExecutorSupport::new);
+    }
 }
