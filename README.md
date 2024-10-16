@@ -38,3 +38,7 @@ base:
       awaitTermination: false
       awaitTerminationPeriod: null
 ```
+
+## Additional Documentation
+Project Javadoc and Jacoco test coverage reports are available at:
+https://kevansimpson.github.io/spring-executor-starter/

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MultipleExecutorSupport.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">spring-executor-starter</a> &gt; <a href="index.source.html" class="el_package">org.spring.ext.task</a> &gt; <span class="el_source">MultipleExecutorSupport.java</span></div><h1>MultipleExecutorSupport.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2002-2021 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.spring.ext.task;
+
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.boot.task.ThreadPoolTaskExecutorBuilder;
+import org.springframework.boot.task.ThreadPoolTaskExecutorCustomizer;
+import org.springframework.context.ApplicationContext;
+import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.core.task.TaskDecorator;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+
+/**
+ * Factory methods for creating {@link AsyncTaskExecutor} beans from {@link MultipleExecutorProperties} configuration.
+ *
+ * @author Kevan Simpson
+ */
+<span class="fc" id="L41">@Log4j2</span>
+<span class="nc" id="L42">public class MultipleExecutorSupport {</span>
+    /**
+     * Creates and customizes {@link AsyncTaskExecutor} beans.
+     *
+     * @param properties Configuration properties for executor beans.
+     * @param taskExecutorCustomizer Optionally provided executor customizer.
+     * @param taskDecorator Optionally provided task decorator.
+     * @param registry Bean definition registry.
+     * @param applicationContext Eponymous application context.
+     * @return a map of executor beans mapped by configured name.
+     */
+    public static Map&lt;String, AsyncTaskExecutor&gt; createMultipleTaskExecutors(
+            MultipleExecutorProperties properties,
+            ObjectProvider&lt;ThreadPoolTaskExecutorCustomizer&gt; taskExecutorCustomizer,
+            ObjectProvider&lt;TaskDecorator&gt; taskDecorator,
+            DefaultListableBeanFactory registry,
+            ApplicationContext applicationContext) {
+
+<span class="fc" id="L60">        Map&lt;String, AsyncTaskExecutor&gt; executorMap = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        for (String poolName : properties.getPools().keySet()) {</span>
+<span class="fc" id="L62">            PoolConfig poolConfig = properties.getPools().get(poolName);</span>
+<span class="fc" id="L63">            log.info(&quot;Creating AsyncTaskExecutor {}: {}&quot;, poolName, poolConfig);</span>
+<span class="fc" id="L64">            ThreadPoolTaskExecutorBuilder builder = newBuilder(poolName, poolConfig, properties.getShutdown());</span>
+<span class="fc" id="L65">            taskExecutorCustomizer.orderedStream().forEach(builder::additionalCustomizers);</span>
+<span class="fc" id="L66">            builder.taskDecorator(taskDecorator.getIfUnique());</span>
+
+<span class="fc" id="L68">            ThreadPoolTaskExecutor pool = builder.build();</span>
+            // configure properties that Spring Boot (afaik) does not
+<span class="fc" id="L70">            customizeExecutor(poolName, poolConfig, pool, applicationContext);</span>
+            // create + register executor as bean
+<span class="fc" id="L72">            pool.initialize();</span>
+<span class="fc" id="L73">            log.info(&quot;Registering initialized pool: {} -&gt; {}&quot;,</span>
+<span class="fc" id="L74">                    poolName, ToStringBuilder.reflectionToString(pool));</span>
+<span class="fc" id="L75">            registry.registerSingleton(poolName, pool);</span>
+<span class="fc" id="L76">            log.info(&quot;Registration for pool {} is complete!&quot;, poolName);</span>
+<span class="fc" id="L77">            executorMap.put(poolName, pool);</span>
+<span class="fc" id="L78">        }</span>
+
+<span class="fc" id="L80">        return executorMap;</span>
+    }
+
+    /**
+     * Customizes a single {@link ThreadPoolTaskExecutor} from configuration.
+     *
+     * @param poolName The name of the executor pool to be customized.
+     * @param poolConfig The pool configuration and source of customization.
+     * @param executor The executor to be customized.
+     * @param applicationContext Eponymous application context.
+     */
+    static void customizeExecutor(
+            String poolName,
+            PoolConfig poolConfig,
+            ThreadPoolTaskExecutor executor,
+            ApplicationContext applicationContext) {
+
+<span class="fc" id="L97">        log.debug(&quot;Customizing executor: {}&quot;, poolName);</span>
+<span class="fc" id="L98">        executor.setBeanName(poolName);</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        if (StringUtils.isNotBlank(poolConfig.getThreadFactory())) {</span>
+<span class="fc" id="L100">            log.debug(&quot;Setting thread factory: {}&quot;, poolConfig.getThreadFactory());</span>
+<span class="fc" id="L101">            executor.setThreadFactory(applicationContext.getBean(poolConfig.getThreadFactory(), ThreadFactory.class));</span>
+        }
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        if (StringUtils.isNotBlank(poolConfig.getTaskDecorator())) {</span>
+<span class="fc" id="L104">            log.debug(&quot;Setting task decorator: {}&quot;, poolConfig.getTaskDecorator());</span>
+<span class="fc" id="L105">            executor.setTaskDecorator(applicationContext.getBean(poolConfig.getTaskDecorator(), TaskDecorator.class));</span>
+        }
+<span class="fc" id="L107">        executor.setWaitForTasksToCompleteOnShutdown(poolConfig.isWaitForTasksToCompleteShutdown());</span>
+<span class="fc" id="L108">        setRejectedExecutionHandler(executor, poolConfig.getRejectedExecutionHandler(), applicationContext);</span>
+<span class="fc" id="L109">    }</span>
+
+    /**
+     * Creates an executor builder using provided configuration.
+     *
+     * @param name The name of the executor pool to be customized.
+     * @param pool The pool configuration and source of customization.
+     * @param shutdown The shutdown configuration and source of customization.
+     * @return the configured executor builder.
+     */
+    static ThreadPoolTaskExecutorBuilder newBuilder(String name, PoolConfig pool, ShutdownConfig shutdown) {
+<span class="fc" id="L120">        return new ThreadPoolTaskExecutorBuilder()</span>
+<span class="fc" id="L121">                .queueCapacity(pool.getQueueCapacity())</span>
+<span class="fc" id="L122">                .corePoolSize(pool.getCoreSize())</span>
+<span class="fc" id="L123">                .maxPoolSize(pool.getMaxSize())</span>
+<span class="fc" id="L124">                .allowCoreThreadTimeOut(pool.isAllowCoreThreadTimeout())</span>
+<span class="fc" id="L125">                .keepAlive(pool.getKeepAlive())</span>
+<span class="fc" id="L126">                .awaitTermination(shutdown.isAwaitTermination())</span>
+<span class="fc" id="L127">                .awaitTerminationPeriod(shutdown.getAwaitTerminationPeriod())</span>
+<span class="fc" id="L128">                .threadNamePrefix(String.format(&quot;%s-task-&quot;, name));</span>
+    }
+
+    /**
+     * Configures the {@link RejectedExecutionHandler} for the given executor.
+     *
+     * @param executor The executor to be customized.
+     * @param policy The policy to apply to the executor.
+     * @param applicationContext Eponymous application context.
+     */
+    static void setRejectedExecutionHandler(
+            ThreadPoolTaskExecutor executor,
+            String policy,
+            ApplicationContext applicationContext) {
+
+<span class="fc bfc" id="L143" title="All 2 branches covered.">        if (StringUtils.isNotBlank(policy)) {</span>
+<span class="fc" id="L144">            log.debug(&quot;Setting rejected execution handler: {}&quot;, policy);</span>
+<span class="fc bfc" id="L145" title="All 5 branches covered.">            switch (policy) {</span>
+                case &quot;AbortPolicy&quot; -&gt;
+<span class="fc" id="L147">                        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());</span>
+                case &quot;CallerRunsPolicy&quot; -&gt;
+<span class="fc" id="L149">                        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());</span>
+                case &quot;DiscardOldestPolicy&quot; -&gt;
+<span class="fc" id="L151">                        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardOldestPolicy());</span>
+                case &quot;DiscardPolicy&quot; -&gt;
+<span class="fc" id="L153">                        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());</span>
+                default -&gt;
+<span class="fc" id="L155">                        executor.setRejectedExecutionHandler(</span>
+<span class="fc" id="L156">                                applicationContext.getBean(policy, RejectedExecutionHandler.class));</span>
+            }
+        }
+<span class="fc" id="L159">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

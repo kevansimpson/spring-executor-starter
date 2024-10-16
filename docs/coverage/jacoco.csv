@@ -1,0 +1,4 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+spring-executor-starter,org.spring.ext.task,MultipleExecutorSupport,3,225,0,13,1,48,1,14,1,6
+spring-executor-starter,org.spring.ext.task,ContextAwareDecorator,0,16,0,0,0,7,0,3,0,3
+spring-executor-starter,org.spring.ext.task,MultipleExecutorAutoConfiguration,0,14,0,0,0,3,0,3,0,3
