@@ -114,6 +114,11 @@
                 <version>3.10.1</version>
                 <configuration>
                     <outputDirectory>${project.basedir}/docs</outputDirectory>
+                    <detectLinks>true</detectLinks>
+                    <links>
+                        <link>https://docs.spring.io/spring-framework/docs/current/javadoc-api/</link>
+                        <link>https://docs.spring.io/spring-boot/api/java/</link>
+                    </links>
                 </configuration>
             </plugin>
             <plugin>
@@ -121,7 +126,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.1</version>
                 <configuration>
-                    <forkMode>once</forkMode>
+                    <forkCount>1</forkCount>
                     <argLine>@{surefireArgLine}</argLine>
                 </configuration>
             </plugin>
