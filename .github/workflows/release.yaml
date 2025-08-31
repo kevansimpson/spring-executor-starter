@@ -120,7 +120,7 @@ jobs:
             ### Maven
             ```xml
             <dependency>
-              <groupId><!-- your-group-id --></groupId>
+              <groupId>org.base</groupId>
               <artifactId>${{ github.event.repository.name }}</artifactId>
               <version>${{ steps.version.outputs.version }}</version>
             </dependency>
@@ -128,7 +128,7 @@ jobs:
             
             ### Gradle
             ```gradle
-            implementation '<!-- your-group-id -->:${{ github.event.repository.name }}:${{ steps.version.outputs.version }}'
+            implementation 'org.base:${{ github.event.repository.name }}:${{ steps.version.outputs.version }}'
             ```
           draft: false
           prerelease: ${{ contains(steps.version.outputs.version, 'beta') || contains(steps.version.outputs.version, 'alpha') || contains(steps.version.outputs.version, 'rc') }}
