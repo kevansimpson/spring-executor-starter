@@ -23,6 +23,10 @@ jobs:
       contents: write  # Required for creating releases
       packages: write  # Required for publishing to GitHub Packages
 
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -52,12 +56,12 @@ jobs:
           else
             VERSION=${GITHUB_REF#refs/tags/v}
           fi
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Release version: $VERSION"
 
       - name: Update Maven version
         run: |
-          mvn versions:set -DnewVersion=${{ steps.version.outputs.VERSION }}
+          mvn versions:set -DnewVersion=${{ steps.version.outputs.version }}
           mvn versions:commit
 
       - name: Run tests
@@ -77,11 +81,22 @@ jobs:
             CHANGELOG=$(git log --pretty=format:"* %s (%h)" --no-merges -10)
           fi
           
-          # Save changelog to file and output
+          # Save changelog to file and environment output
           echo "$CHANGELOG" > CHANGELOG.md
-          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "changelog<<EOF"
+            echo "$CHANGELOG"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Find JAR file
+        id: jar
+        run: |
+          JAR_FILE=$(find target -name "*.jar" -not -name "*sources*" -not -name "*javadoc*" | head -1)
+          JAR_NAME=$(basename "$JAR_FILE")
+          echo "jar_file=$JAR_FILE" >> $GITHUB_OUTPUT
+          echo "jar_name=$JAR_NAME" >> $GITHUB_OUTPUT
+          echo "Found JAR: $JAR_FILE"
 
       - name: Create GitHub Release
         id: create_release
@@ -89,18 +104,34 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ steps.version.outputs.VERSION }}
-          release_name: Release v${{ steps.version.outputs.VERSION }}
+          tag_name: v${{ steps.version.outputs.version }}
+          release_name: Release v${{ steps.version.outputs.version }}
           body: |
-            ## Changes in v${{ steps.version.outputs.VERSION }}
+            ## Changes in v${{ steps.version.outputs.version }}
             
-            ${{ steps.changelog.outputs.CHANGELOG }}
+            ${{ steps.changelog.outputs.changelog }}
             
             ## Artifacts
-            - JAR file: `target/*.jar`
+            - JAR file: `${{ steps.jar.outputs.jar_name }}`
             - Source code is available below
+            
+            ## Installation
+            
+            ### Maven
+            ```xml
+            <dependency>
+              <groupId><!-- your-group-id --></groupId>
+              <artifactId>${{ github.event.repository.name }}</artifactId>
+              <version>${{ steps.version.outputs.version }}</version>
+            </dependency>
+            ```
+            
+            ### Gradle
+            ```gradle
+            implementation '<!-- your-group-id -->:${{ github.event.repository.name }}:${{ steps.version.outputs.version }}'
+            ```
           draft: false
-          prerelease: false
+          prerelease: ${{ contains(steps.version.outputs.version, 'beta') || contains(steps.version.outputs.version, 'alpha') || contains(steps.version.outputs.version, 'rc') }}
 
       - name: Upload JAR to Release
         uses: actions/upload-release-asset@v1
@@ -108,8 +139,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: target/*.jar
-          asset_name: ${{ github.event.repository.name }}-${{ steps.version.outputs.VERSION }}.jar
+          asset_path: ${{ steps.jar.outputs.jar_file }}
+          asset_name: ${{ github.event.repository.name }}-${{ steps.version.outputs.version }}.jar
           asset_content_type: application/java-archive
 
       - name: Publish to GitHub Packages
@@ -120,11 +151,11 @@ jobs:
 
       # Optional: Deploy to Maven Central (requires additional setup)
       - name: Publish to Maven Central
-        if: contains(github.ref, 'refs/tags/') && !contains(github.ref, 'beta') && !contains(github.ref, 'alpha')
+        if: contains(github.ref, 'refs/tags/') && !contains(steps.version.outputs.version, 'beta') && !contains(steps.version.outputs.version, 'alpha')
         run: |
           # Uncomment and configure if you want to publish to Maven Central
           # You'll need to set up GPG signing and OSSRH credentials
-          # mvn clean deploy -P release -DskipTests
+          # mvn clean deploy -P release -DskipTests -s $GITHUB_WORKSPACE/settings.xml
           echo "Maven Central deployment disabled. Configure GPG and OSSRH credentials to enable."
         env:
           # MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
@@ -132,7 +163,7 @@ jobs:
           # MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Optional: Notify on release completion
+  # Notification job demonstrating job outputs
   notify:
     needs: release
     runs-on: ubuntu-latest
@@ -142,10 +173,13 @@ jobs:
       - name: Notify success
         if: needs.release.result == 'success'
         run: |
-          echo "✅ Release v${{ needs.release.outputs.VERSION }} completed successfully!"
+          echo "✅ Release v${{ needs.release.outputs.version }} completed successfully!"
+          echo "📦 JAR artifact uploaded to GitHub release"
+          echo "🚀 Published to GitHub Packages"
 
       - name: Notify failure
         if: needs.release.result == 'failure'
         run: |
-          echo "❌ Release failed. Check the logs for details."
+          echo "❌ Release failed for version ${{ needs.release.outputs.version || 'unknown' }}"
+          echo "🔍 Check the logs for details"
           exit 1
